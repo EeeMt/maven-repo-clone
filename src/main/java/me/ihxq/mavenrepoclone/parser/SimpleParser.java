@@ -48,14 +48,25 @@ public class SimpleParser {
         String itemUrl = url + href;
         Node node = element.nextSibling();
         String text = node.outerHtml().replaceAll("\n", "");
-        List<String> collect = Arrays.stream(text.split(" {2}")) // todo optimize
+        List<String> collect = Arrays.stream(text.split(" "))
                 .filter(v -> !Objects.equals("", v))
                 .filter(v -> !Objects.equals(" ", v))
                 .map(String::trim)
+                .filter(v -> !Objects.equals("", v))
+                .filter(v -> !Objects.equals(" ", v))
                 .collect(Collectors.toList());
         LocalDateTime time = null;
+        String timeStr = "-";
+        String sizeStr = "-";
+        if (collect.size() == 3) {
+            timeStr = collect.get(0) + " " + collect.get(1);
+            sizeStr = collect.get(2);
+        } else if (collect.size() == 2
+                && !Objects.equals(collect.get(0), "-")
+                && !Objects.equals(collect.get(1), "-")) {
+            timeStr = (collect.get(0) + " " + collect.get(1));
+        }
 
-        String timeStr = collect.size() > 0 ? collect.get(0) : "-";
         if (!timeStr.equals("-")) {
             try {
                 time = LocalDateTime.parse(timeStr, DATE_TIME_FORMATTER);
@@ -64,7 +75,6 @@ public class SimpleParser {
             }
         }
 
-        String sizeStr = collect.size() > 1 ? collect.get(1) : "-";
         long size = 0;
         if (!sizeStr.equals("-")) {
             size = Long.parseLong(sizeStr);

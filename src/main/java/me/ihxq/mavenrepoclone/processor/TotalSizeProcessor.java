@@ -1,6 +1,7 @@
 package me.ihxq.mavenrepoclone.processor;
 
 import lombok.extern.slf4j.Slf4j;
+import me.ihxq.mavenrepoclone.constants.UrlConstant;
 import me.ihxq.mavenrepoclone.enums.ItemType;
 import me.ihxq.mavenrepoclone.model.Directory;
 import me.ihxq.mavenrepoclone.model.FileItem;
@@ -12,6 +13,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static me.ihxq.mavenrepoclone.enums.ItemType.DIRECTORY;
@@ -29,14 +31,14 @@ public class TotalSizeProcessor implements Processor<Directory, Long> {
 
     public TotalSizeProcessor(Processor<Directory, List<Item>> readDirectoryProcessor) {
         this.readDirectoryProcessor = readDirectoryProcessor;
-        executor = new ThreadPoolExecutor(20, 20,
+        executor = new ThreadPoolExecutor(100, 100,
                 60L, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(10));
         executor.setRejectedExecutionHandler(new CallerRunsPolicy());
     }
 
-    private long logTotal = 0L;
-    private long countTotal = 0L;
+    private AtomicLong logTotal = new AtomicLong();
+    private AtomicLong countTotal = new AtomicLong();
 
 
     @Override
@@ -59,17 +61,20 @@ public class TotalSizeProcessor implements Processor<Directory, Long> {
             } else if (itemType.equals(FILE)) {
                 FileItem fileItem = (FileItem) item;
                 String currentFile = item.getUrl() + fileItem.getName();
+                String uri = item.getUrl().replace(UrlConstant.BASE_URL.compact(), "");
                 log.trace("processing file: {}", currentFile);
                 long size = Optional.ofNullable(fileItem.getSize()).orElse(0L);
                 total.updateAndGet(v -> v + size);
                 String readableSize = humanReadableByteCount(fileItem.getSize(), true);
                 log.trace("file size: {} / {} / {}; {}", fileItem.getName(), fileItem.getSize(), readableSize, countTotal);
-                logTotal += size;
-                countTotal++;
-                String readableTotal = humanReadableByteCount(logTotal, true);
-                log.trace("total: {} / {}", logTotal, readableTotal);
-                System.out.print(String.format("\r total: %s, current: %s, current file size: %s",
-                        readableTotal, currentFile, readableSize));
+                logTotal.updateAndGet(v -> v + size);
+                countTotal.incrementAndGet();
+                String readableTotal = humanReadableByteCount(logTotal.get(), true);
+                if (countTotal.get() % 1000 == 0) {
+                    log.info("total: {} / {} / {}", logTotal.get(), readableTotal, countTotal.get());
+                }
+                //System.out.print(String.format("\r total: %s, current: %s, current file size: %s",
+                //        readableTotal, uri.substring(0, 20), readableSize));
                 //System.out.print(String.format("\r%d%%", i + 1));
             }
         }

@@ -3,11 +3,11 @@
     <property name="FILE_LOG_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} [%15.15t] %-40.40logger{39}[%line]: %msg%n"/>
 
-<!--    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">-->
-<!--        <layout class="ch.qos.logback.classic.PatternLayout">-->
-<!--            <Pattern>${FILE_LOG_PATTERN}</Pattern>-->
-<!--        </layout>-->
-<!--    </appender>-->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>${FILE_LOG_PATTERN}</Pattern>
+        </layout>
+    </appender>
 
     <!-- Appender to log to file -->
     <appender name="file"
@@ -28,7 +28,7 @@
     <!--        <appender-ref ref="CONSOLE"/>-->
     <!--    </logger>-->
     <root level="INFO">
-<!--        <appender-ref ref="CONSOLE"/>-->
+        <appender-ref ref="CONSOLE"/>
         <appender-ref ref="file"/>
     </root>
 

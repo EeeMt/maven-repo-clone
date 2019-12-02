@@ -9,7 +9,10 @@ import me.ihxq.mavenrepoclone.parser.SimpleParser;
 import me.ihxq.mavenrepoclone.processor.ReadDirectoryProcessor;
 import me.ihxq.mavenrepoclone.processor.TotalSizeProcessor;
 
+import java.time.LocalDateTime;
 import java.util.List;
+
+import static me.ihxq.mavenrepoclone.util.FileSizeUtil.humanReadableByteCount;
 
 /**
  * @author xq.h
@@ -27,6 +30,7 @@ public class Starter {
 
 
     public void start() throws Exception {
+        log.info("started {}", LocalDateTime.now());
         SimpleParser simpleParser = new SimpleParser();
         TotalSizeProcessor totalSizeProcessor = new TotalSizeProcessor(new ReadDirectoryProcessor());
         List<Item> items = simpleParser.parse(UrlConstant.HOST_URL.compact());
@@ -39,7 +43,8 @@ public class Starter {
                 case DIRECTORY:
                     item.setUrl(UrlConstant.BASE_URL.compact());
                     Long total = totalSizeProcessor.process((Directory) item);
-                    System.out.println(total);
+                    System.out.println("total: " + total);
+                    log.info("finished {} {}", humanReadableByteCount(total, true), LocalDateTime.now());
                     break;
                 default:
 
