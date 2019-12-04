@@ -8,7 +8,7 @@ import lombok.Getter;
  **/
 public enum UrlConstant {
     HOST_URL("https://repo1.maven.org/"),
-    BASE_URL(HOST_URL.value + "maven2/");
+    BASE_URL(HOST_URL.compact("maven2/"));
 
     @Getter
     private String value;
