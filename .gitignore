@@ -31,4 +31,4 @@ build/
 .vscode/
 
 ### Log File
-.log
+*.log
