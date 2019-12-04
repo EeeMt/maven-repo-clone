@@ -36,6 +36,6 @@ public class TotalSizeRunner implements InitializingBean {
                 .build();
         Future<Long> process = totalSizeProcessor.process(entrance);
         Long total = process.get();
-        log.info("finished {} {}", humanReadableByteCount(total, true), LocalDateTime.now());
+        log.info("finished {}/{} {}", total, humanReadableByteCount(total, true), LocalDateTime.now());
     }
 }

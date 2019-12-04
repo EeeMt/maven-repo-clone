@@ -77,31 +77,30 @@ public class TotalSizeProcessor implements Processor<Directory, CompletableFutur
 
     @Override
     public CompletableFuture<Long> process(Directory in) {
-        List<Item> itemList = this.readDirectory(in);
-        List<CompletableFuture<Long>> futures = itemList.stream()
-                .filter(totalSizeAnalysisConfig.getDocPredicate())
-                .filter(totalSizeAnalysisConfig.getSourcePredicate())
-                .map(item -> {
-                    ItemType itemType = item.getItemType();
-                    if (itemType.equals(DIRECTORY)) {
-                        log.trace("processing directory: {}", item.getUrl());
-                        return process((Directory) item);
-                    } else if (itemType.equals(FILE)) {
-                        log.trace("processing file: {}", item.getUrl());
-                        return processFile((FileItem) item);
-                    }
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        //List<Item> itemList = this.readDirectory(in);
+        log.info("processing directory: {}", in.getPath());
+        //System.out.printf("\rprocessing directory(%s): %s \r", Thread.currentThread().getName(), in.getPath());
+        return CompletableFuture.supplyAsync(() -> this.readDirectory(in), executor)
+                .thenApplyAsync(itemList -> itemList.stream()
+                        .filter(totalSizeAnalysisConfig.getDocPredicate())
+                        .filter(totalSizeAnalysisConfig.getSourcePredicate())
+                        .map(item -> {
+                            ItemType itemType = item.getItemType();
+                            if (itemType.equals(DIRECTORY)) {
+                                log.trace("processing directory: {}", item.getUrl());
+                                return process((Directory) item);
+                            } else if (itemType.equals(FILE)) {
+                                log.trace("processing file: {}", item.getUrl());
+                                return processFile((FileItem) item);
+                            }
+                            return null;
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()), executor)
+                .thenApplyAsync(futures -> futures.stream()
+                        .mapToLong(this::unboxingFuture)
+                        .sum(), executor);
 
-        return CompletableFuture.supplyAsync(() -> {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            log.info("processed directory: {}", in.getPath());
-            return futures.stream()
-                    .mapToLong(this::unboxingFuture)
-                    .sum();
-        });
     }
 
     private long unboxingFuture(CompletableFuture<Long> future) {
@@ -110,6 +109,36 @@ public class TotalSizeProcessor implements Processor<Directory, CompletableFutur
         } catch (Exception e) {
             log.error("error unboxing: {}", future, e);
             return 0L;
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        System.out.print("\033[H\033[2J");
+        System.out.println(1000000L);
+        Thread.sleep(2000L);
+        Runtime.getRuntime().exec("clear");
+        clearConsole();
+        clearScreen();
+        System.out.print("\033[H\033[2J");
+        System.out.println(2000000L);
+    }
+
+    public static void clearScreen() {
+        System.out.print("\033[H\033[2J");
+        System.out.flush();
+    }
+
+    public final static void clearConsole() {
+        try {
+            final String os = System.getProperty("os.name");
+
+            if (os.contains("Windows")) {
+                Runtime.getRuntime().exec("cls");
+            } else {
+                Runtime.getRuntime().exec("clear");
+            }
+        } catch (final Exception e) {
+            //  Handle any exceptions.
         }
     }
 }
