@@ -1,11 +1,11 @@
-package me.ihxq.mavenrepoclone.processor;
+package me.ihxq.mavenrepoclone.processor.impl;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.ihxq.mavenrepoclone.processor.Processor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -13,17 +13,11 @@ import java.util.Objects;
 /**
  * @author xq.h
  * 2019/12/2 00:11
- **/
+ */
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Service
 public class HtmlFetchProcessor implements Processor<String, String> {
-    private OkHttpClient client = new OkHttpClient();
-
-    private static final HtmlFetchProcessor INSTANCE = new HtmlFetchProcessor();
-
-    public static HtmlFetchProcessor getInstance() {
-        return INSTANCE;
-    }
+    private final OkHttpClient client = new OkHttpClient();
 
     @Override
     public String process(String url) throws IOException {

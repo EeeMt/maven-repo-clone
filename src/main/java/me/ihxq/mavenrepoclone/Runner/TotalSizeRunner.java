@@ -2,17 +2,13 @@ package me.ihxq.mavenrepoclone.Runner;
 
 import lombok.extern.slf4j.Slf4j;
 import me.ihxq.mavenrepoclone.constants.UrlConstant;
-import me.ihxq.mavenrepoclone.enums.ItemType;
 import me.ihxq.mavenrepoclone.model.Directory;
-import me.ihxq.mavenrepoclone.model.Item;
-import me.ihxq.mavenrepoclone.parser.SimpleParser;
-import me.ihxq.mavenrepoclone.processor.ReadDirectoryProcessor;
-import me.ihxq.mavenrepoclone.processor.TotalSizeProcessor;
+import me.ihxq.mavenrepoclone.processor.impl.TotalSizeProcessor;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.concurrent.Future;
 
 import static me.ihxq.mavenrepoclone.util.FileSizeUtil.humanReadableByteCount;
 
@@ -23,28 +19,23 @@ import static me.ihxq.mavenrepoclone.util.FileSizeUtil.humanReadableByteCount;
 @Slf4j
 @Service
 public class TotalSizeRunner implements InitializingBean {
+    private final TotalSizeProcessor totalSizeProcessor;
+
+    public TotalSizeRunner(TotalSizeProcessor totalSizeProcessor) {
+        this.totalSizeProcessor = totalSizeProcessor;
+    }
 
     @Override
     public void afterPropertiesSet() throws Exception {
         log.info("started {}", LocalDateTime.now());
-        SimpleParser simpleParser = new SimpleParser();
-        TotalSizeProcessor totalSizeProcessor = new TotalSizeProcessor(new ReadDirectoryProcessor());
-        List<Item> items = simpleParser.parse(UrlConstant.HOST_URL.compact());
-        for (Item item : items) {
-            ItemType itemType = item.getItemType();
-            switch (itemType) {
-                case FILE:
-                    log.error("error");
-                    break;
-                case DIRECTORY:
-                    item.setUrl(UrlConstant.BASE_URL.compact());
-                    Long total = totalSizeProcessor.process((Directory) item);
-                    System.out.println("total: " + total);
-                    log.info("finished {} {}", humanReadableByteCount(total, true), LocalDateTime.now());
-                    break;
-                default:
-
-            }
-        }
+        Directory entrance = Directory.builder()
+                .depth(0)
+                .name("maven2/")
+                .time(null)
+                .url(UrlConstant.BASE_URL.compact())
+                .build();
+        Future<Long> process = totalSizeProcessor.process(entrance);
+        Long total = process.get();
+        log.info("finished {} {}", humanReadableByteCount(total, true), LocalDateTime.now());
     }
 }

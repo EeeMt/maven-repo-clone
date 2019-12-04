@@ -12,4 +12,8 @@ public interface Item {
     String getUrl();
 
     void setUrl(String url);
+
+    String getName();
+
+    void setName(String name);
 }

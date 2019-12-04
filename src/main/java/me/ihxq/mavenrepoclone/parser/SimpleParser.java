@@ -4,11 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import me.ihxq.mavenrepoclone.model.Directory;
 import me.ihxq.mavenrepoclone.model.FileItem;
 import me.ihxq.mavenrepoclone.model.Item;
-import me.ihxq.mavenrepoclone.processor.HtmlFetchProcessor;
+import me.ihxq.mavenrepoclone.processor.impl.HtmlFetchProcessor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -21,12 +22,19 @@ import java.util.stream.Collectors;
  * 2019/12/1 21:27
  **/
 @Slf4j
+@Service
 public class SimpleParser {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
+    private final HtmlFetchProcessor htmlFetchProcessor;
+
+    public SimpleParser(HtmlFetchProcessor htmlFetchProcessor) {
+        this.htmlFetchProcessor = htmlFetchProcessor;
+    }
+
     public List<Item> parse(String url) throws IOException {
-        String html = HtmlFetchProcessor.getInstance().process(url);
+        String html = htmlFetchProcessor.process(url);
         Elements elements = Jsoup.parse(html).select("pre > a");
         List<Item> items = new ArrayList<>();
         for (Element element : elements) {
@@ -80,7 +88,13 @@ public class SimpleParser {
             size = Long.parseLong(sizeStr);
         }
         if (name.endsWith("/")) {
-            return Optional.of(Directory.of(name, itemUrl, time));
+            Directory build = Directory.builder()
+                    .name(name)
+                    .url(itemUrl)
+                    .time(time)
+                    //.depth()
+                    .build();
+            return Optional.of(build);
         } else {
             return Optional.of(FileItem.of(name, itemUrl, time, size));
         }

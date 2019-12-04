@@ -1,9 +1,11 @@
-package me.ihxq.mavenrepoclone.processor;
+package me.ihxq.mavenrepoclone.processor.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import me.ihxq.mavenrepoclone.model.Directory;
 import me.ihxq.mavenrepoclone.model.Item;
 import me.ihxq.mavenrepoclone.parser.SimpleParser;
+import me.ihxq.mavenrepoclone.processor.Processor;
+import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
@@ -13,8 +15,13 @@ import java.util.List;
  * 2019/12/1 21:00
  **/
 @Slf4j
+@Service
 public class ReadDirectoryProcessor implements Processor<Directory, List<Item>> {
-    private SimpleParser parser = new SimpleParser();
+    private  final SimpleParser parser ;
+
+    public ReadDirectoryProcessor(SimpleParser parser) {
+        this.parser = parser;
+    }
 
     @Override
     public List<Item> process(Directory in) {

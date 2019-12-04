@@ -1,7 +1,9 @@
 package me.ihxq.mavenrepoclone.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import me.ihxq.mavenrepoclone.constants.UrlConstant;
 import me.ihxq.mavenrepoclone.enums.ItemType;
 
 import java.time.LocalDateTime;
@@ -11,14 +13,19 @@ import java.time.LocalDateTime;
  * 2019/12/1 21:01
  **/
 @Data
+@Builder
 @AllArgsConstructor
 public class Directory implements Item {
     private String name;
     private String url;
     private LocalDateTime time;
+    private int depth;
 
-    public static Directory of(String name, String url, LocalDateTime time) {
-        return new Directory(name, url, time);
+    public String getPath() {
+        if (url == null) {
+            return null;
+        }
+        return url.replace(UrlConstant.BASE_URL.getValue(), "");
     }
 
     @Override
