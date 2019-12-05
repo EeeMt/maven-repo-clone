@@ -5,6 +5,7 @@ import me.ihxq.mavenrepoclone.config.TotalSizeAnalysisConfig;
 import me.ihxq.mavenrepoclone.enums.ItemType;
 import me.ihxq.mavenrepoclone.model.Directory;
 import me.ihxq.mavenrepoclone.model.FileItem;
+import me.ihxq.mavenrepoclone.model.InOutWrapper;
 import me.ihxq.mavenrepoclone.model.Item;
 import me.ihxq.mavenrepoclone.processor.Processor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -12,10 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static me.ihxq.mavenrepoclone.enums.ItemType.DIRECTORY;
 import static me.ihxq.mavenrepoclone.enums.ItemType.FILE;
@@ -27,7 +27,7 @@ import static me.ihxq.mavenrepoclone.util.FileSizeUtil.humanReadableByteCount;
  **/
 @Slf4j
 @Service
-public class TotalSizeProcessor implements Processor<Directory, CompletableFuture<Long>> {
+public class TotalSizeProcessor implements Processor<InOutWrapper<Directory, AtomicLong>, CompletableFuture<Void>> {
     private Processor<Directory, List<Item>> readDirectoryProcessor;
     private final TotalSizeAnalysisConfig totalSizeAnalysisConfig;
     private ThreadPoolTaskExecutor executor;
@@ -48,59 +48,46 @@ public class TotalSizeProcessor implements Processor<Directory, CompletableFutur
         }
     }
 
-    private CompletableFuture<Long> processDirectory(Directory in) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return this.process(in).get();
-            } catch (Exception e) {
-                log.error("error processing directory", e);
-                return 0L;
-            }
-        }, executor);
-    }
-
-    private CompletableFuture<Long> processFile(FileItem in) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                String currentFile = in.getUrl() + in.getName();
-                log.trace("processing file: {}", currentFile);
-                long size = Optional.ofNullable(in.getSize()).orElse(0L);
+    private void processFile(InOutWrapper<FileItem, AtomicLong> wrapper) {
+        FileItem in = wrapper.getIn();
+        AtomicLong out = wrapper.getOut();
+        try {
+            String currentFile = in.getUrl() + in.getName();
+            log.trace("processing file: {}", currentFile);
+            long size = Optional.ofNullable(in.getSize()).orElse(0L);
+            if (log.isTraceEnabled()) {
                 String readableSize = humanReadableByteCount(in.getSize(), true);
                 log.trace("file size: {} / {} / {};", in.getName(), in.getSize(), readableSize);
-                return size;
-            } catch (Exception e) {
-                log.error("error", e);
-                return 0L;
             }
-        }, executor);
+            out.updateAndGet(v -> v + size);
+        } catch (Exception e) {
+            log.error("error", e);
+        }
     }
 
     @Override
-    public CompletableFuture<Long> process(Directory in) {
-        //List<Item> itemList = this.readDirectory(in);
-        log.info("processing directory: {}", in.getPath());
+    public CompletableFuture<Void> process(InOutWrapper<Directory, AtomicLong> wrapper) {
+        Directory directory = wrapper.getIn();
+        if (directory.getDepth() <= totalSizeAnalysisConfig.getDirectoryLoggingMaxDepth()) {
+            log.info("processing directory:  {}",  directory.getPath());
+        }
         //System.out.printf("\rprocessing directory(%s): %s \r", Thread.currentThread().getName(), in.getPath());
-        return CompletableFuture.supplyAsync(() -> this.readDirectory(in), executor)
-                .thenApplyAsync(itemList -> itemList.stream()
+        return CompletableFuture.supplyAsync(() -> this.readDirectory(directory), executor)
+                .thenAcceptAsync(itemList -> itemList.stream()
                         .filter(totalSizeAnalysisConfig.getDocPredicate())
                         .filter(totalSizeAnalysisConfig.getSourcePredicate())
-                        .map(item -> {
+                        .forEach(item -> {
                             ItemType itemType = item.getItemType();
                             if (itemType.equals(DIRECTORY)) {
                                 log.trace("processing directory: {}", item.getUrl());
-                                return process((Directory) item);
+                                InOutWrapper<Directory, AtomicLong> sub = InOutWrapper.of((Directory) item, wrapper.getOut());
+                                CompletableFuture.runAsync(() -> process(sub), executor);
                             } else if (itemType.equals(FILE)) {
                                 log.trace("processing file: {}", item.getUrl());
-                                return processFile((FileItem) item);
+                                InOutWrapper<FileItem, AtomicLong> sub = InOutWrapper.of((FileItem) item, wrapper.getOut());
+                                CompletableFuture.runAsync(() -> processFile(sub), executor);
                             }
-                            return null;
-                        })
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList()), executor)
-                .thenApplyAsync(futures -> futures.stream()
-                        .mapToLong(this::unboxingFuture)
-                        .sum(), executor);
-
+                        }), executor);
     }
 
     private long unboxingFuture(CompletableFuture<Long> future) {

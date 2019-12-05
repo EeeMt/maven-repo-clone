@@ -27,6 +27,7 @@ public class TotalSizeAnalysisConfig implements InitializingBean {
 
     private boolean includeSource = true;
     private boolean includeDoc = true;
+    private int directoryLoggingMaxDepth = 2;
 
     private ThreadPoolProperties threadPoolProperties = new ThreadPoolProperties();
 

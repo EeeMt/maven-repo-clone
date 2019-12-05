@@ -17,7 +17,7 @@ import java.util.List;
 @Slf4j
 @Service
 public class ReadDirectoryProcessor implements Processor<Directory, List<Item>> {
-    private  final SimpleParser parser ;
+    private final SimpleParser parser;
 
     public ReadDirectoryProcessor(SimpleParser parser) {
         this.parser = parser;
@@ -26,7 +26,13 @@ public class ReadDirectoryProcessor implements Processor<Directory, List<Item>> 
     @Override
     public List<Item> process(Directory in) {
         try {
-            return parser.parse(in.getUrl());
+            List<Item> items = parser.parse(in.getUrl());
+            items.forEach(v -> {
+                if (v instanceof Directory) {
+                    ((Directory) v).setDepth(in.getDepth() + 1);
+                }
+            });
+            return items;
         } catch (Exception e) {
             log.error("error: {}", in, e);
         }

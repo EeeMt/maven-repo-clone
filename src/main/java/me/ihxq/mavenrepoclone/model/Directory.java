@@ -25,7 +25,7 @@ public class Directory implements Item {
         if (url == null) {
             return null;
         }
-        return url.replace(UrlConstant.BASE_URL.getValue(), "");
+        return url.replace(UrlConstant.BASE_URL.getValue(), "/");
     }
 
     @Override

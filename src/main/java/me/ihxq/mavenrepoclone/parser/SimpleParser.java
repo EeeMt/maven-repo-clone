@@ -41,7 +41,7 @@ public class SimpleParser {
             try {
                 this.doParse(url, element).ifPresent(items::add);
             } catch (Exception e) {
-                log.error("parse error", e);
+                log.error("parse error, url: {}", url, e);
             }
         }
         return items;
