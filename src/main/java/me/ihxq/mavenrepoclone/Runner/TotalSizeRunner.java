@@ -5,7 +5,8 @@ import me.ihxq.mavenrepoclone.constants.UrlConstant;
 import me.ihxq.mavenrepoclone.model.Directory;
 import me.ihxq.mavenrepoclone.model.InOutWrapper;
 import me.ihxq.mavenrepoclone.processor.impl.TotalSizeProcessor;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -22,14 +23,14 @@ import static me.ihxq.mavenrepoclone.util.FileSizeUtil.humanReadableByteCount;
  **/
 @Slf4j
 @Service
-public class TotalSizeRunner implements InitializingBean {
+public class TotalSizeRunner {
     private final TotalSizeProcessor totalSizeProcessor;
 
     public TotalSizeRunner(TotalSizeProcessor totalSizeProcessor) {
         this.totalSizeProcessor = totalSizeProcessor;
     }
 
-    @Override
+    @EventListener(ApplicationReadyEvent.class)
     public void afterPropertiesSet() throws Exception {
         LocalDateTime start = LocalDateTime.now();
         log.info("started {}", start);

@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -92,7 +94,7 @@ public class SimpleParser {
                     .name(name)
                     .url(itemUrl)
                     .time(time)
-                    //.depth()
+                    .depth(0)
                     .build();
             return Optional.of(build);
         } else {
@@ -100,4 +102,12 @@ public class SimpleParser {
         }
     }
 
+    public static void main(String[] args) {
+        Pattern pattern = Pattern.compile("[\\t ]*((-)|(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}))[\\t ]*(\\d+)[\\t ]*");
+        Matcher matcher = pattern.matcher("2017-01-07 12:271039006700");
+        matcher.find();
+        for (int i = 0; i <= matcher.groupCount(); i++) {
+            System.out.println(matcher.group(i));
+        }
+    }
 }
